@@ -1,0 +1,32 @@
+
+
+
+
+
+Getting Raspberry Pi and Cosmos Communicating
+Document 2
+
+
+Version 1
+
+
+
+Guilherme Korol
+07/03/2015
+
+	The first document showed how to establish a telemetry link between Cosmos and Raspberry Pi. This document will add a command sending mechanism from Cosmos to a Raspberry Pi.
+
+	First, a configuration file sets the right message format (CCSDS) that Cosmos will use to send commands in order to the Raspberry Pi be able to decode the incoming packet into well-known parts. The target configuration file is also responsible for pre-load various commands for the user interface, then saving the user to fill all the fields of the message.
+	On the other hand, a CFS tool was adapted to receive the commands and forward it to the Sensors program. It is done by the tlmUtil tool, which has its main program – TelemetrySystem.py. TelemetrySystem receives all UDP packets addressed to its port. Once received, TelemetrySystem reads the stream ID field which assigns the final application that is supposed to deal with the just received data packet. EventMessage.py is one of the already existing applications that CFS provides. Few adaptations were made in order to get EventMessage exchange multiprocessing messages with Sensors. These messages contain the three letters acronym for a command. Therefore, Sensors can interpret the command and process it. For example, some commands are MNT to start sending telemetry monitoring, STP to stop telemetry sending, ALL to send all sensors data only once, LGT to send light sensor data, among others.
+Step by step configuration:
+COSMOS:
+- Adding command configuration file.
+Paste rpi_cmds.txt to C:\COSMOS\Demo\config\targets\RPI\cmd_tlm\
+
+RASPBERRY PI:
+- tlmUtil
+Replace EventMessage.py under cFE-6.4.1-oss-release\cfe\tools\tlmUtil
+- Sensors
+If you are not using the Sensors version with command receiving, replace it under cFE-6.4.1-oss-release\cfe\tools\flatSat\
+
+	
