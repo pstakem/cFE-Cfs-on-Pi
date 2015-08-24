@@ -1,0 +1,79 @@
+
+
+
+
+
+Getting Raspberry Pi and Cosmos Communicating
+
+
+Version 2
+
+
+
+Guilherme Korol
+6/30/2015
+
+	This document will guide you in the installation process of Cosmos, The Core Flight System (CFS), and other additional pieces of software in order to establish communication between a Raspberry Pi-based CubeSat and a Control Center using the Cosmos from Ball Aerospace. Frist, a telemetry stream will be configured to run from a Raspberry Pi to Cosmos.
+	In order to understand the big picture, take a look at the schema.
+
+	The CubeSat is using a Raspberry Pi connected to an analog digital converter, which is reading light and temperature sensors. SPI protocol is used to communicate Raspberry Pi and the MCP3008 (ADC). Other sensors can be added.
+	In the future, the full integration of the Pi with the Core Flight System is planned, and its tool will be used as an UDP packet sender. The current system works as follows: the sensor reading, which is proceed by a python script, is getting raw data from the ADC. The MCP3008 is a 10 bit converter, hence it is delivering a binary number from 0 to 1023 from each sensor channel. The program sensors.py is converting this number to a four ASCII characters string. This was done because cmdUtil (the CFS tool) expects a string of characters as input. After this first conversion, sensors.py ‘call’ cmdUtil to send the data. This has the destination IP address with port, command ID, packet ID, and the ‘string’ (in this case, the data from both sensors – in the format: TTTTLLLL, where TTTT is the temperature value and LLLL is the light value). 
+	In fact, CmdUtil is a command sender for CFS applications. Here, it is being used as a general data sender. In the future, a field such as the command ID can be used to identify what kind of data is being sent. 
+	The control center software Cosmos is running on a Windows 7 machine. Some configuration is required to create a new ‘target’ and interface protocol as well as break the UDP packets into well-known fields. Additionally, two Ruby scripts are responsible for converting the incoming data string to measurable units. Light is converted to a percentage value and temperature is converted to degree Celsius. “Target” is what Cosmos calls the Raspberry Pi.
+Step by step configuration:
+Some steps were retrieved from Cosmos and CFS readme files. 
+COSMOS:
+ Installing Cosmos.
+	Download Cosmos from https://github.com/BallAerospace/COSMOS .
+	Unzip the file.
+	Under COSMOS-master\vendor\installer\windows edit the file INSTALL_COSMOS.bat 
+		Line 28: Change to if “%USERDNSDOMAIN%”==“AERO.BALL.COM” (
+		Line 134: Change to if “%PROCESSOR_ARCHITECTURE%”==“x86” (
+		Line 186: Change to if “%PROCESSOR_ARCHITECTURE%”==“x86” (
+	Using the windows terminal go to COSMOS-master\vendor\installer\windows and type INSTALL_COSMOS.bat
+	Cosmos should be installed and ready to run. Cosmos website: cosmosrb.com
+	- Adding target files.
+	Replace C:\COSMOS\Demo\config\tools\cmd_tlm_server\cmd_tlm_server.txt
+	Replace C:\COSMOS\Demo\config\system\system.txt
+	Add tlm_grapherRPI.txt to C:\COSMOS\Demo\config\tools\tlm_grapher\
+	Add the folder RPI to C:\COSMOS\Demo\config\targets\
+
+CORE FLIGHT SYSTEM:
+- Building and running NASA developed open source Core Flight Executive. At this moment the full Core Flight Executive.
+If you intend to use graphical interface for the python tools on CFS install qt4, type on terminal sudo apt-get install python-qt4 pyqt4-dev-tools
+	Download Core Flight Executive and OSAL. https://sourceforge.net/projects/coreflightexec and http://sourceforge.net/projects/osal/ 
+	Unzip both files.
+	Copy the content from osal-4.1.1-release\ to cFE-6.4.1-oss-release\osal\
+	Now, some Makefiles modifications are needed. (Maybe that is not the best or right way to do it)
+	Under cFE-6.4.1-oss-release\build\cpu1\elf2cfetb\ edit Makefile removing –m32 from ARCH_DEFS line.
+	Under cFE-6.4.1-oss-release\psp\fsw\pc-linux\make\ edit compiler-opts.mak commenting out ARCH_OPTS line. Also, set linker options to ld –m armelf_linux_eabi (LINKER = ld –m armelf_linux_eabi)
+	Go back to cFE-6.4.1-oss-release\ type    . ./setvars.sh
+	Under cFE-6.4.1-oss-release\build\cpu1\ type make config
+	Under cFE-6.4.1-oss-release\build\cpu1\ type make
+	Under Under cFE-6.4.1-oss-release\build\cpu1\exe run core-linux.bin (./core-linux.bin)
+	CFE core should be running with no applications.
+	- Compiling cmdUtil
+	Under cFE-6.4.1-oss-release\cfe\tools\cmdUtil\ type make
+	
+SENSORS
+	- Preparing and using sensors.py
+	Copy the folder flatSat to cFE-6.4.1-oss-release\cfe\tools
+	Run the script as super user and using python3 (sudo python3 sensors.py) or make it executable typing chmod +x sensors.py
+
+Cosmos screenshot:
+
+
+
+Cosmos:
+	“Cosmos is a piece of open source software from Ball Aerospace (see, http://www.cosmosrb.com). It implements the functions of a satellite control center. It can be used for simple embedded systems, cubesats, or larger satellite systems, both in orbit, and under test.”
+	“It Includes functions such as data injest and logging, limits monitoring, a packet viewer, a telemetry viewer and grapher, the ability to create telemetry and command handbooks, command sender, and an ability to replay logged telemetry data. It includes a demo mode. Data is accepted over Ethernet or serial connections. Cosmos runs on a laptop or desktop environment.” 
+
+	(Diagram from Ball Aerospace)
+
+CFS:
+	“cFS is the core flight system, and open source product from NASA Goddard Space Flight Center. It is a library of software routines for spacecraft flight computer systems. It includes functionality for…” 
+	
+
+	
+	
+
